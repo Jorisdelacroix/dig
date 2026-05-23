@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>[DIG] — sélecteur de pépites</title>
+<style>
+  :root{
+    --bg:#0f0f0e; --surface:#1a1a18; --surface2:#232321;
+    --text:#f2f1ec; --muted:#9b9a92; --hint:#6a6963;
+    --border:#312f2b; --border-hi:#46443e;
+    --accent:#5dcaa5; --accent-dim:#0f6e56;
+    --radius:12px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  body{max-width:680px; margin:0 auto; padding:24px 18px 60px;}
+  h1{font-size:21px; font-weight:600; letter-spacing:-0.02em;}
+  .sub{font-size:13px; color:var(--muted); margin-top:2px;}
+  .row{display:flex; align-items:center; gap:12px;}
+  .between{justify-content:space-between;}
+  .wrap{flex-wrap:wrap;}
+  button{font:inherit; cursor:pointer; color:var(--text);
+    background:transparent; border:1px solid var(--border-hi);
+    border-radius:8px; padding:9px 14px; transition:.12s;}
+  button:hover{background:var(--surface2); border-color:var(--accent-dim);}
+  button:active{transform:scale(.98);}
+  button.primary{background:var(--accent-dim); border-color:var(--accent-dim);
+    color:#eafff7; font-weight:600; font-size:15px; padding:11px 20px;}
+  button.primary:hover{background:#0d8268;}
+  button.ghost{padding:6px 11px; font-size:12px; color:var(--muted);}
+  .card{background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius); padding:16px;}
+  .now-title{font-size:15px; font-weight:600;}
+  .now-cur{font-size:13px; color:var(--muted); margin-top:2px;}
+  #playerSlot{margin-top:12px; border-radius:8px; overflow:hidden;
+    background:var(--bg); border:1px solid var(--border); min-height:80px;
+    display:flex; align-items:center; justify-content:center;}
+  #playerSlot .empty{color:var(--hint); font-size:13px; padding:28px;}
+  audio{width:100%; display:block;}
+  .resume{font-size:12px; color:var(--accent); margin-top:9px;}
+  .section-label{font-size:12px; font-weight:600; color:var(--muted);
+    text-transform:uppercase; letter-spacing:.06em;}
+  .mix{display:flex; align-items:center; gap:11px; padding:10px 13px;
+    border:1px solid var(--border); border-radius:8px;
+    background:var(--surface); cursor:pointer; transition:.1s;}
+  .mix:hover{border-color:var(--border-hi);}
+  .mix.active{border-color:var(--accent-dim); background:var(--surface2);}
+  .mix .ic{font-size:17px; width:20px; text-align:center; color:var(--muted);}
+  .mix .meta{flex:1; min-width:0;}
+  .mix .mt{font-size:14px; font-weight:600; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis;}
+  .mix .mc{font-size:12px; color:var(--muted); margin-top:1px;}
+  .mix .stat{font-size:11px; color:var(--hint); white-space:nowrap;}
+  .mix .stat.has{color:var(--accent);}
+  .mix .del{font-size:14px; color:var(--hint); padding:3px 6px;
+    border:none; background:none;}
+  .mix .del:hover{color:#e24b4a; background:none; transform:none;}
+  .badge{font-size:10px; padding:2px 6px; border-radius:4px;
+    background:var(--surface2); color:var(--muted); text-transform:uppercase;
+    letter-spacing:.05em;}
+  input[type=text]{font:inherit; background:var(--surface2);
+    border:1px solid var(--border-hi); border-radius:8px;
+    padding:9px 12px; color:var(--text); width:100%;}
+  input[type=text]:focus{outline:none; border-color:var(--accent-dim);}
+  input[type=text]::placeholder{color:var(--hint);}
+  .add-form{display:flex; gap:8px; margin-top:10px;}
+  .add-form input{flex:1;}
+  .hint-line{font-size:11px; color:var(--hint); margin-top:7px; line-height:1.6;}
+  .stack{display:flex; flex-direction:column; gap:7px;}
+  .mt24{margin-top:24px;} .mt16{margin-top:16px;} .mt12{margin-top:12px;}
+</style>
+</head>
+<body>
+
+<div class="row between wrap">
+  <div>
+    <h1>[DIG] — sélecteur de pépites</h1>
+    <div class="sub">mixes de curateurs · reprise auto · tirage pondéré</div>
+  </div>
+  <button class="primary" id="randomBtn">⇄ Au hasard</button>
+</div>
+
+<div class="card mt16">
+  <div class="now-title" id="nowTitle">Aucun mix sélectionné</div>
+  <div class="now-cur" id="nowCur">Tire au hasard ou choisis dans la liste</div>
+  <div id="playerSlot"><span class="empty">Le player apparaîtra ici</span></div>
+  <div class="resume" id="resumeNote" style="display:none"></div>
+</div>
+
+<div class="row between mt24">
+  <span class="section-label">Ta liste</span>
+  <button class="ghost" id="resetBtn">↻ Réinitialiser l'historique</button>
+</div>
+<div class="stack mt12" id="list"></div>
+
+<div class="card mt24">
+  <span class="section-label">Ajouter une émission</span>
+  <div class="add-form">
+    <input type="text" id="addUrl" placeholder="URL Mixcloud ou lien .mp3 d'un flux">
+    <button id="addBtn">Ajouter</button>
+  </div>
+  <div class="hint-line">
+    Mixcloud : colle l'adresse d'un mix ou d'un compte (mixcloud.com/…). Le titre se règle ensuite.<br>
+    Flux audio : colle un lien direct se terminant par .mp3 — il sera lu par le player natif.<br>
+    Tout est sauvegardé dans ce fichier (localStorage). Garde-le quelque part de stable.
+  </div>
+</div>
+
+<script src="https://widget.mixcloud.com/media/js/widgetApi.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var SEED = [
+    {id:"s1", type:"mixcloud", title:"Worldwide FM", curator:"Gilles Peterson", ref:"/WorldwideFM/"},
+    {id:"s2", type:"mixcloud", title:"NTS Radio", curator:"résidents NTS", ref:"/NTSRadio/"},
+    {id:"s3", type:"mixcloud", title:"Solid Steel", curator:"Coldcut / Ninja Tune", ref:"/Ninjatune/"},
+    {id:"s4", type:"mixcloud", title:"Brownswood Basement", curator:"Brownswood", ref:"/BrownswoodRecordings/"},
+    {id:"s5", type:"mixcloud", title:"Crack Mix", curator:"Crack Magazine", ref:"/CrackMagazine/"}
+  ];
+
+  var DB = load();
+
+  function load(){
+    try{
+      var raw = localStorage.getItem("dig_db_v1");
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return { mixes: SEED.slice(), prog: {} };
+  }
+  function save(){
+    try{ localStorage.setItem("dig_db_v1", JSON.stringify(DB)); }catch(e){}
+  }
+  function prog(id){
+    if(!DB.prog[id]) DB.prog[id] = {seconds:0, last:0, plays:0};
+    return DB.prog[id];
+  }
+  function fmt(s){
+    s = Math.round(s||0);
+    var m = Math.floor(s/60), x = s%60;
+    return m + ":" + (x<10?"0":"") + x;
+  }
+
+  var slot   = document.getElementById("playerSlot");
+  var nowT   = document.getElementById("nowTitle");
+  var nowC   = document.getElementById("nowCur");
+  var resume = document.getElementById("resumeNote");
+
+  var current = null;
+  var mcWidget = null;
+  var audioEl = null;
+  var saveTimer = null;
+
+  function teardown(){
+    if(saveTimer){ clearInterval(saveTimer); saveTimer=null; }
+    mcWidget = null; audioEl = null;
+    slot.innerHTML = "";
+  }
+
+  function play(mix){
+    teardown();
+    current = mix;
+    var p = prog(mix.id);
+    nowT.textContent = mix.title;
+    nowC.textContent = mix.curator || (mix.type==="mixcloud"?"Mixcloud":"flux audio");
+
+    if(p.seconds > 15){
+      resume.style.display = "block";
+      resume.textContent = "Reprise à " + fmt(p.seconds) + " — la lecture redémarre là où tu t'étais arrêté.";
+    } else {
+      resume.style.display = "none";
+    }
+
+    if(mix.type === "mixcloud"){
+      var src = "https://www.mixcloud.com/widget/iframe/?hide_cover=1&light=0&feed="
+                + encodeURIComponent(mix.ref);
+      var f = document.createElement("iframe");
+      f.width="100%"; f.height="120"; f.frameBorder="0"; f.src=src;
+      slot.appendChild(f);
+      setTimeout(function(){
+        try{
+          mcWidget = Mixcloud.PlayerWidget(f);
+          mcWidget.ready.then(function(){
+            if(p.seconds>15){ try{ mcWidget.seek(p.seconds); }catch(e){} }
+            mcWidget.events.progress.on(function(pos){ p.seconds=pos; });
+            mcWidget.events.play.on(function(){
+              p.last=Date.now(); p.plays=(p.plays||0)+1; save(); render();
+            });
+            mcWidget.events.pause.on(save);
+            mcWidget.events.ended.on(function(){ p.seconds=0; save(); });
+            saveTimer = setInterval(save, 8000);
+          });
+        }catch(e){}
+      }, 700);
+    } else {
+      audioEl = document.createElement("audio");
+      audioEl.controls = true;
+      audioEl.preload = "metadata";
+      audioEl.src = mix.ref;
+      slot.appendChild(audioEl);
+      audioEl.addEventListener("loadedmetadata", function(){
+        if(p.seconds>15 && p.seconds < (audioEl.duration||1e9)){
+          try{ audioEl.currentTime = p.seconds; }catch(e){}
+        }
+      });
+      audioEl.addEventListener("timeupdate", function(){ p.seconds = audioEl.currentTime; });
+      audioEl.addEventListener("play", function(){
+        p.last=Date.now(); p.plays=(p.plays||0)+1; save(); render();
+      });
+      audioEl.addEventListener("pause", save);
+      audioEl.addEventListener("ended", function(){ p.seconds=0; save(); });
+      saveTimer = setInterval(save, 8000);
+    }
+    save(); render();
+  }
+
+  function pickRandom(){
+    var now = Date.now(), list = DB.mixes;
+    if(!list.length) return null;
+    var weighted = list.map(function(m){
+      var p = prog(m.id);
+      var hrs = p.last ? (now - p.last)/3600000 : 9999;
+      var w = Math.min(hrs, 720) + 1;
+      if(current && m.id === current.id) w = 0.01;
+      return {m:m, w:w};
+    });
+    var total = weighted.reduce(function(a,b){return a+b.w;},0);
+    var r = Math.random()*total;
+    for(var i=0;i<weighted.length;i++){
+      r -= weighted[i].w;
+      if(r<=0) return weighted[i].m;
+    }
+    return list[0];
+  }
+
+  function render(){
+    var el = document.getElementById("list");
+    el.innerHTML = "";
+    if(!DB.mixes.length){
+      el.innerHTML = '<div class="hint-line">Liste vide — ajoute une émission ci-dessous.</div>';
+      return;
+    }
+    DB.mixes.forEach(function(m){
+      var p = prog(m.id);
+      var active = current && m.id===current.id;
+      var row = document.createElement("div");
+      row.className = "mix" + (active?" active":"");
+
+      var stat = p.seconds>15
+        ? '<span class="stat has">▸ '+fmt(p.seconds)+'</span>'
+        : '<span class="stat">'+(p.plays?('lancé '+p.plays+'×'):'jamais lancé')+'</span>';
+
+      row.innerHTML =
+        '<span class="ic">'+(active?'▶':'◉')+'</span>'+
+        '<div class="meta">'+
+          '<div class="mt">'+esc(m.title)+'</div>'+
+          '<div class="mc">'+esc(m.curator||"")+' '+
+            '<span class="badge">'+(m.type==="mixcloud"?"mixcloud":"audio")+'</span></div>'+
+        '</div>'+stat+
+        '<button class="del" data-id="'+m.id+'" title="Retirer">✕</button>';
+
+      row.addEventListener("click", function(ev){
+        if(ev.target.classList.contains("del")) return;
+        play(m);
+      });
+      el.appendChild(row);
+    });
+    el.querySelectorAll(".del").forEach(function(b){
+      b.addEventListener("click", function(){
+        var id = b.getAttribute("data-id");
+        DB.mixes = DB.mixes.filter(function(x){return x.id!==id;});
+        delete DB.prog[id];
+        if(current && current.id===id){ current=null; teardown();
+          slot.innerHTML='<span class="empty">Le player apparaîtra ici</span>';
+          nowT.textContent="Aucun mix sélectionné";
+          nowC.textContent="Tire au hasard ou choisis dans la liste";
+          resume.style.display="none";
+        }
+        save(); render();
+      });
+    });
+  }
+
+  function esc(s){
+    return String(s).replace(/[&<>"]/g,function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+    });
+  }
+
+  function addMix(url){
+    url = (url||"").trim();
+    if(!url) return;
+    var id = "u" + Date.now();
+    var mix;
+    if(/mixcloud\.com/i.test(url)){
+      var path = url.replace(/^https?:\/\/(www\.)?mixcloud\.com/i,"");
+      if(path.charAt(0)!=="/") path = "/"+path;
+      if(path.charAt(path.length-1)!=="/") path += "/";
+      var nameGuess = path.split("/").filter(Boolean).pop() || "mix Mixcloud";
+      mix = {id:id, type:"mixcloud", title:decodeURIComponent(nameGuess).replace(/-/g," "),
+             curator:"Mixcloud", ref:path};
+    } else if(/\.mp3(\?|$)/i.test(url) || /^https?:\/\//i.test(url)){
+      var fn = url.split("/").pop().split("?")[0] || "flux audio";
+      mix = {id:id, type:"audio", title:decodeURIComponent(fn).replace(/\.mp3$/i,""),
+             curator:"flux audio", ref:url};
+    } else {
+      alert("URL non reconnue. Colle un lien Mixcloud ou un lien .mp3.");
+      return;
+    }
+    DB.mixes.push(mix);
+    save(); render();
+  }
+
+  document.getElementById("randomBtn").addEventListener("click", function(){
+    var m = pickRandom();
+    if(m) play(m);
+  });
+  document.getElementById("resetBtn").addEventListener("click", function(){
+    DB.prog = {}; current=null; teardown();
+    slot.innerHTML='<span class="empty">Le player apparaîtra ici</span>';
+    nowT.textContent="Aucun mix sélectionné";
+    nowC.textContent="Tire au hasard ou choisis dans la liste";
+    resume.style.display="none";
+    save(); render();
+  });
+  document.getElementById("addBtn").addEventListener("click", function(){
+    var inp = document.getElementById("addUrl");
+    addMix(inp.value); inp.value="";
+  });
+  document.getElementById("addUrl").addEventListener("keydown", function(e){
+    if(e.key==="Enter"){ addMix(this.value); this.value=""; }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
