@@ -2,21 +2,26 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>[DIG] — sélecteur de pépites</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f0f0e">
+<title>[DIG]</title>
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%5BDIG%5D%20s%C3%A9lecteur%20de%20p%C3%A9pites%22%2C%22short_name%22%3A%22%5BDIG%5D%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230f0f0e%22%2C%22theme_color%22%3A%22%230f0f0e%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22icon.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
+<link rel="apple-touch-icon" href="icon.png">
 <style>
   :root{
     --bg:#0f0f0e; --surface:#1a1a18; --surface2:#232321;
     --text:#f2f1ec; --muted:#9b9a92; --hint:#6a6963;
     --border:#312f2b; --border-hi:#46443e;
     --accent:#5dcaa5; --accent-dim:#0f6e56;
+    --live:#e2884b;
     --radius:12px;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   html,body{background:var(--bg); color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     -webkit-font-smoothing:antialiased;}
-  body{max-width:680px; margin:0 auto; padding:24px 18px 60px;}
+  body{max-width:680px; margin:0 auto;
+    padding:calc(24px + env(safe-area-inset-top)) 18px 60px;}
   h1{font-size:21px; font-weight:600; letter-spacing:-0.02em;}
   .sub{font-size:13px; color:var(--muted); margin-top:2px;}
   .row{display:flex; align-items:center; gap:12px;}
@@ -61,6 +66,7 @@
   .badge{font-size:10px; padding:2px 6px; border-radius:4px;
     background:var(--surface2); color:var(--muted); text-transform:uppercase;
     letter-spacing:.05em;}
+  .badge.live{background:#3a2417; color:var(--live);}
   input[type=text]{font:inherit; background:var(--surface2);
     border:1px solid var(--border-hi); border-radius:8px;
     padding:9px 12px; color:var(--text); width:100%;}
@@ -78,13 +84,13 @@
 <div class="row between wrap">
   <div>
     <h1>[DIG] — sélecteur de pépites</h1>
-    <div class="sub">mixes de curateurs · reprise auto · tirage pondéré</div>
+    <div class="sub">radios live + mixes · reprise auto · tirage pondéré</div>
   </div>
   <button class="primary" id="randomBtn">⇄ Au hasard</button>
 </div>
 
 <div class="card mt16">
-  <div class="now-title" id="nowTitle">Aucun mix sélectionné</div>
+  <div class="now-title" id="nowTitle">Aucune sélection</div>
   <div class="now-cur" id="nowCur">Tire au hasard ou choisis dans la liste</div>
   <div id="playerSlot"><span class="empty">Le player apparaîtra ici</span></div>
   <div class="resume" id="resumeNote" style="display:none"></div>
@@ -99,13 +105,13 @@
 <div class="card mt24">
   <span class="section-label">Ajouter une émission</span>
   <div class="add-form">
-    <input type="text" id="addUrl" placeholder="URL Mixcloud ou lien .mp3 d'un flux">
+    <input type="text" id="addUrl" placeholder="URL Mixcloud, lien de flux .mp3/.aac">
     <button id="addBtn">Ajouter</button>
   </div>
   <div class="hint-line">
-    Mixcloud : colle l'adresse d'un mix ou d'un compte (mixcloud.com/…). Le titre se règle ensuite.<br>
-    Flux audio : colle un lien direct se terminant par .mp3 — il sera lu par le player natif.<br>
-    Tout est sauvegardé dans ce fichier (localStorage). Garde-le quelque part de stable.
+    Mixcloud : colle l'adresse d'un mix précis (mixcloud.com/compte/nom-du-mix/).<br>
+    Radio / flux : colle une URL de stream direct (.mp3, .aac) — lue par le player natif.<br>
+    Tout est sauvegardé localement dans ce navigateur.
   </div>
 </div>
 
@@ -114,25 +120,49 @@
 (function(){
   "use strict";
 
+  // type "live"     -> flux radio continu, player natif, PAS de reprise
+  // type "audio"    -> enregistrement MP3/AAC, player natif, reprise activee
+  // type "mixcloud" -> mix Mixcloud, widget, reprise activee
   var SEED = [
-    {id:"s1", type:"mixcloud", title:"Worldwide FM", curator:"Gilles Peterson", ref:"/WorldwideFM/"},
-    {id:"s2", type:"mixcloud", title:"NTS Radio", curator:"résidents NTS", ref:"/NTSRadio/"},
-    {id:"s3", type:"mixcloud", title:"Solid Steel", curator:"Coldcut / Ninja Tune", ref:"/Ninjatune/"},
-    {id:"s4", type:"mixcloud", title:"Brownswood Basement", curator:"Brownswood", ref:"/BrownswoodRecordings/"},
-    {id:"s5", type:"mixcloud", title:"Crack Mix", curator:"Crack Magazine", ref:"/CrackMagazine/"}
+    {id:"r1", type:"live", title:"NTS 1", curator:"NTS — Londres, live 24/7",
+     ref:"https://stream-relay-geo.ntslive.net/stream?client=direct"},
+    {id:"r2", type:"live", title:"NTS 2", curator:"NTS — second flux, live 24/7",
+     ref:"https://stream-relay-geo.ntslive.net/stream2?client=direct"},
+    {id:"r3", type:"live", title:"FIP", curator:"Radio France — éclectique",
+     ref:"https://icecast.radiofrance.fr/fip-hifi.aac?id=radiofrance"},
+    {id:"r4", type:"live", title:"FIP Électro", curator:"Radio France — webradio",
+     ref:"https://icecast.radiofrance.fr/fipelectro-hifi.aac?id=radiofrance"},
+    {id:"r5", type:"live", title:"FIP Groove", curator:"Radio France — webradio",
+     ref:"https://icecast.radiofrance.fr/fipgroove-hifi.aac?id=radiofrance"},
+    {id:"r6", type:"live", title:"FIP Jazz", curator:"Radio France — webradio",
+     ref:"https://icecast.radiofrance.fr/fipjazz-hifi.aac?id=radiofrance"},
+    {id:"r7", type:"live", title:"FIP Rock", curator:"Radio France — webradio",
+     ref:"https://icecast.radiofrance.fr/fiprock-hifi.aac?id=radiofrance"},
+    {id:"r8", type:"live", title:"FIP Reggae", curator:"Radio France — webradio",
+     ref:"https://icecast.radiofrance.fr/fipreggae-hifi.aac?id=radiofrance"},
+    {id:"r9", type:"live", title:"FIP Monde", curator:"Radio France — webradio",
+     ref:"https://icecast.radiofrance.fr/fipworld-hifi.aac?id=radiofrance"},
+    {id:"r10", type:"live", title:"FIP Nouveautés", curator:"Radio France — webradio",
+     ref:"https://icecast.radiofrance.fr/fipnouveautes-hifi.aac?id=radiofrance"},
+    {id:"r11", type:"live", title:"FIP Hip-Hop", curator:"Radio France — webradio",
+     ref:"https://icecast.radiofrance.fr/fiphiphop-hifi.aac?id=radiofrance"},
+    {id:"r12", type:"live", title:"FIP Metal", curator:"Radio France — webradio",
+     ref:"https://icecast.radiofrance.fr/fipmetal-hifi.aac?id=radiofrance"},
+    {id:"r13", type:"live", title:"Radio Nova", curator:"Nova — underground, Paris",
+     ref:"https://novazz.ice.infomaniak.ch/novazz-128.mp3"}
   ];
 
   var DB = load();
 
   function load(){
     try{
-      var raw = localStorage.getItem("dig_db_v1");
+      var raw = localStorage.getItem("dig_db_v3");
       if(raw) return JSON.parse(raw);
     }catch(e){}
     return { mixes: SEED.slice(), prog: {} };
   }
   function save(){
-    try{ localStorage.setItem("dig_db_v1", JSON.stringify(DB)); }catch(e){}
+    try{ localStorage.setItem("dig_db_v3", JSON.stringify(DB)); }catch(e){}
   }
   function prog(id){
     if(!DB.prog[id]) DB.prog[id] = {seconds:0, last:0, plays:0};
@@ -143,6 +173,7 @@
     var m = Math.floor(s/60), x = s%60;
     return m + ":" + (x<10?"0":"") + x;
   }
+  function resumable(mix){ return mix.type === "audio" || mix.type === "mixcloud"; }
 
   var slot   = document.getElementById("playerSlot");
   var nowT   = document.getElementById("nowTitle");
@@ -165,11 +196,14 @@
     current = mix;
     var p = prog(mix.id);
     nowT.textContent = mix.title;
-    nowC.textContent = mix.curator || (mix.type==="mixcloud"?"Mixcloud":"flux audio");
+    nowC.textContent = mix.curator || "";
 
-    if(p.seconds > 15){
+    if(resumable(mix) && p.seconds > 15){
       resume.style.display = "block";
-      resume.textContent = "Reprise à " + fmt(p.seconds) + " — la lecture redémarre là où tu t'étais arrêté.";
+      resume.textContent = "Reprise à " + fmt(p.seconds) + " — redémarre où tu t'étais arrêté.";
+    } else if(mix.type === "live"){
+      resume.style.display = "block";
+      resume.textContent = "● Direct — ce qui passe maintenant.";
     } else {
       resume.style.display = "none";
     }
@@ -179,6 +213,7 @@
                 + encodeURIComponent(mix.ref);
       var f = document.createElement("iframe");
       f.width="100%"; f.height="120"; f.frameBorder="0"; f.src=src;
+      f.allow="autoplay";
       slot.appendChild(f);
       setTimeout(function(){
         try{
@@ -201,17 +236,23 @@
       audioEl.preload = "metadata";
       audioEl.src = mix.ref;
       slot.appendChild(audioEl);
-      audioEl.addEventListener("loadedmetadata", function(){
-        if(p.seconds>15 && p.seconds < (audioEl.duration||1e9)){
-          try{ audioEl.currentTime = p.seconds; }catch(e){}
-        }
-      });
-      audioEl.addEventListener("timeupdate", function(){ p.seconds = audioEl.currentTime; });
+      if(mix.type === "audio"){
+        audioEl.addEventListener("loadedmetadata", function(){
+          if(p.seconds>15 && p.seconds < (audioEl.duration||1e9)){
+            try{ audioEl.currentTime = p.seconds; }catch(e){}
+          }
+        });
+        audioEl.addEventListener("timeupdate", function(){ p.seconds = audioEl.currentTime; });
+        audioEl.addEventListener("ended", function(){ p.seconds=0; save(); });
+      }
       audioEl.addEventListener("play", function(){
         p.last=Date.now(); p.plays=(p.plays||0)+1; save(); render();
       });
       audioEl.addEventListener("pause", save);
-      audioEl.addEventListener("ended", function(){ p.seconds=0; save(); });
+      audioEl.addEventListener("error", function(){
+        resume.style.display="block";
+        resume.textContent="⚠ Flux injoignable — l'URL a peut-être changé.";
+      });
       saveTimer = setInterval(save, 8000);
     }
     save(); render();
@@ -249,16 +290,24 @@
       var row = document.createElement("div");
       row.className = "mix" + (active?" active":"");
 
-      var stat = p.seconds>15
-        ? '<span class="stat has">▸ '+fmt(p.seconds)+'</span>'
-        : '<span class="stat">'+(p.plays?('lancé '+p.plays+'×'):'jamais lancé')+'</span>';
+      var stat;
+      if(m.type === "live"){
+        stat = '<span class="stat">'+(p.plays?('lancé '+p.plays+'×'):'—')+'</span>';
+      } else if(p.seconds>15){
+        stat = '<span class="stat has">▸ '+fmt(p.seconds)+'</span>';
+      } else {
+        stat = '<span class="stat">'+(p.plays?('lancé '+p.plays+'×'):'jamais lancé')+'</span>';
+      }
+
+      var badge = m.type==="live"
+        ? '<span class="badge live">● live</span>'
+        : '<span class="badge">'+(m.type==="mixcloud"?"mixcloud":"audio")+'</span>';
 
       row.innerHTML =
-        '<span class="ic">'+(active?'▶':'◉')+'</span>'+
+        '<span class="ic">'+(active?'▶':(m.type==="live"?'◉':'◎'))+'</span>'+
         '<div class="meta">'+
           '<div class="mt">'+esc(m.title)+'</div>'+
-          '<div class="mc">'+esc(m.curator||"")+' '+
-            '<span class="badge">'+(m.type==="mixcloud"?"mixcloud":"audio")+'</span></div>'+
+          '<div class="mc">'+esc(m.curator||"")+' '+badge+'</div>'+
         '</div>'+stat+
         '<button class="del" data-id="'+m.id+'" title="Retirer">✕</button>';
 
@@ -275,7 +324,7 @@
         delete DB.prog[id];
         if(current && current.id===id){ current=null; teardown();
           slot.innerHTML='<span class="empty">Le player apparaîtra ici</span>';
-          nowT.textContent="Aucun mix sélectionné";
+          nowT.textContent="Aucune sélection";
           nowC.textContent="Tire au hasard ou choisis dans la liste";
           resume.style.display="none";
         }
@@ -296,18 +345,26 @@
     var id = "u" + Date.now();
     var mix;
     if(/mixcloud\.com/i.test(url)){
-      var path = url.replace(/^https?:\/\/(www\.)?mixcloud\.com/i,"");
+      var path = url.replace(/^https?:\/\/(www\.)?mixcloud\.com/i,"").split("?")[0];
       if(path.charAt(0)!=="/") path = "/"+path;
       if(path.charAt(path.length-1)!=="/") path += "/";
-      var nameGuess = path.split("/").filter(Boolean).pop() || "mix Mixcloud";
-      mix = {id:id, type:"mixcloud", title:decodeURIComponent(nameGuess).replace(/-/g," "),
+      var seg = path.split("/").filter(Boolean);
+      if(seg.length < 2){
+        alert("Colle l'URL d'un MIX précis, pas seulement d'un compte.\nEx : mixcloud.com/compte/nom-du-mix/");
+        return;
+      }
+      var nameGuess = seg[seg.length-1];
+      mix = {id:id, type:"mixcloud",
+             title:decodeURIComponent(nameGuess).replace(/-/g," "),
              curator:"Mixcloud", ref:path};
-    } else if(/\.mp3(\?|$)/i.test(url) || /^https?:\/\//i.test(url)){
-      var fn = url.split("/").pop().split("?")[0] || "flux audio";
-      mix = {id:id, type:"audio", title:decodeURIComponent(fn).replace(/\.mp3$/i,""),
-             curator:"flux audio", ref:url};
+    } else if(/^https?:\/\//i.test(url)){
+      var isLive = !/\.mp3(\?|$)/i.test(url) || /icecast|stream-relay|radiofrance/i.test(url);
+      var fn = url.split("/").pop().split("?")[0] || "flux";
+      mix = {id:id, type: isLive ? "live" : "audio",
+             title:decodeURIComponent(fn).replace(/\.(mp3|aac)$/i,""),
+             curator: isLive ? "flux live" : "enregistrement", ref:url};
     } else {
-      alert("URL non reconnue. Colle un lien Mixcloud ou un lien .mp3.");
+      alert("URL non reconnue. Colle un lien Mixcloud ou une URL de flux (http…).");
       return;
     }
     DB.mixes.push(mix);
@@ -321,7 +378,7 @@
   document.getElementById("resetBtn").addEventListener("click", function(){
     DB.prog = {}; current=null; teardown();
     slot.innerHTML='<span class="empty">Le player apparaîtra ici</span>';
-    nowT.textContent="Aucun mix sélectionné";
+    nowT.textContent="Aucune sélection";
     nowC.textContent="Tire au hasard ou choisis dans la liste";
     resume.style.display="none";
     save(); render();
