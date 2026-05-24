@@ -3,330 +3,427 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0f0f0e">
+<meta name="theme-color" content="#070a07">
 <title>[DIG]</title>
-<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%5BDIG%5D%20s%C3%A9lecteur%20de%20p%C3%A9pites%22%2C%22short_name%22%3A%22%5BDIG%5D%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230f0f0e%22%2C%22theme_color%22%3A%22%230f0f0e%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22icon.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%5BDIG%5D%20radio%22%2C%22short_name%22%3A%22%5BDIG%5D%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23070a07%22%2C%22theme_color%22%3A%22%23070a07%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22icon.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
 <link rel="apple-touch-icon" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0f0f0e; --surface:#1a1a18; --surface2:#232321;
-    --text:#f2f1ec; --muted:#9b9a92; --hint:#6a6963;
-    --border:#312f2b; --border-hi:#46443e;
-    --accent:#5dcaa5; --accent-dim:#0f6e56;
-    --live:#e2884b;
-    --radius:12px;
+    --bg:#070a07;
+    --bg-2:#0c110c;
+    --bg-3:#101810;
+    --grid:#13201380;
+    --green:#3df07a;
+    --green-dim:#1f8a47;
+    --green-faint:#2a4a32;
+    --green-ghost:#4a5a4a;
+    --amber:#f0b03d;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
-  html,body{background:var(--bg); color:var(--text);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    -webkit-font-smoothing:antialiased;}
-  body{max-width:680px; margin:0 auto;
-    padding:calc(24px + env(safe-area-inset-top)) 18px 60px;}
-  h1{font-size:21px; font-weight:600; letter-spacing:-0.02em;}
-  .sub{font-size:13px; color:var(--muted); margin-top:2px;}
-  .row{display:flex; align-items:center; gap:12px;}
-  .between{justify-content:space-between;}
-  .wrap{flex-wrap:wrap;}
-  button{font:inherit; cursor:pointer; color:var(--text);
-    background:transparent; border:1px solid var(--border-hi);
-    border-radius:8px; padding:9px 14px; transition:.12s;}
-  button:hover{background:var(--surface2); border-color:var(--accent-dim);}
-  button:active{transform:scale(.98);}
-  button.primary{background:var(--accent-dim); border-color:var(--accent-dim);
-    color:#eafff7; font-weight:600; font-size:15px; padding:11px 20px;}
-  button.primary:hover{background:#0d8268;}
-  button.ghost{padding:6px 11px; font-size:12px; color:var(--muted);}
-  .card{background:var(--surface); border:1px solid var(--border);
-    border-radius:var(--radius); padding:16px;}
-  .now-title{font-size:15px; font-weight:600;}
-  .now-cur{font-size:13px; color:var(--muted); margin-top:2px;}
-  #playerSlot{margin-top:12px; border-radius:8px; overflow:hidden;
-    background:var(--bg); border:1px solid var(--border); min-height:80px;
-    display:flex; align-items:center; justify-content:center;}
-  #playerSlot .empty{color:var(--hint); font-size:13px; padding:28px;}
-  audio{width:100%; display:block;}
-  .resume{font-size:12px; color:var(--accent); margin-top:9px;}
-  .section-label{font-size:12px; font-weight:600; color:var(--muted);
-    text-transform:uppercase; letter-spacing:.06em;}
-  .mix{display:flex; align-items:center; gap:11px; padding:10px 13px;
-    border:1px solid var(--border); border-radius:8px;
-    background:var(--surface); cursor:pointer; transition:.1s;}
-  .mix:hover{border-color:var(--border-hi);}
-  .mix.active{border-color:var(--accent-dim); background:var(--surface2);}
-  .mix .ic{font-size:17px; width:20px; text-align:center; color:var(--muted);}
-  .mix .meta{flex:1; min-width:0;}
-  .mix .mt{font-size:14px; font-weight:600; white-space:nowrap;
-    overflow:hidden; text-overflow:ellipsis;}
-  .mix .mc{font-size:12px; color:var(--muted); margin-top:1px;}
-  .mix .stat{font-size:11px; color:var(--hint); white-space:nowrap;}
-  .mix .stat.has{color:var(--accent);}
-  .mix .del{font-size:14px; color:var(--hint); padding:3px 6px;
-    border:none; background:none;}
-  .mix .del:hover{color:#e24b4a; background:none; transform:none;}
-  .badge{font-size:10px; padding:2px 6px; border-radius:4px;
-    background:var(--surface2); color:var(--muted); text-transform:uppercase;
-    letter-spacing:.05em;}
-  .badge.live{background:#3a2417; color:var(--live);}
-  input[type=text]{font:inherit; background:var(--surface2);
-    border:1px solid var(--border-hi); border-radius:8px;
-    padding:9px 12px; color:var(--text); width:100%;}
-  input[type=text]:focus{outline:none; border-color:var(--accent-dim);}
-  input[type=text]::placeholder{color:var(--hint);}
-  .add-form{display:flex; gap:8px; margin-top:10px;}
-  .add-form input{flex:1;}
-  .hint-line{font-size:11px; color:var(--hint); margin-top:7px; line-height:1.6;}
-  .stack{display:flex; flex-direction:column; gap:7px;}
-  .mt24{margin-top:24px;} .mt16{margin-top:16px;} .mt12{margin-top:12px;}
+  html,body{background:var(--bg);}
+  body{
+    font-family:'JetBrains Mono',ui-monospace,monospace;
+    color:var(--green);
+    max-width:600px; margin:0 auto;
+    padding:calc(20px + env(safe-area-inset-top)) 16px 60px;
+    position:relative;
+  }
+  /* CRT scanlines */
+  body::after{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:99;
+    background:repeating-linear-gradient(0deg,
+      rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px,
+      rgba(0,0,0,.28) 3px, rgba(0,0,0,.28) 3px);
+  }
+  /* faint terminal grid */
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:
+      linear-gradient(var(--grid) 1px,transparent 1px),
+      linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:34px 34px;
+    opacity:.5;
+  }
+  .scr{position:relative; z-index:1;}
+  .blink{animation:bl 1.1s steps(1) infinite;}
+  @keyframes bl{50%{opacity:0;}}
+  /* ---- header ---- */
+  .prompt{font-size:12px; color:var(--green-ghost); letter-spacing:.04em;}
+  .prompt b{color:var(--green); font-weight:500;}
+  h1{
+    font-size:44px; font-weight:800; letter-spacing:.06em;
+    margin:8px 0 4px; color:var(--green);
+    text-shadow:0 0 14px rgba(61,240,122,.45);
+  }
+  .boot{font-size:11px; color:var(--green-dim); letter-spacing:.05em; line-height:1.8;}
+  .boot .ok{color:var(--green);}
+  /* ---- deck ---- */
+  .deck{
+    margin-top:18px; border:1px solid var(--green-faint);
+    background:var(--bg-2);
+  }
+  .deck-bar{
+    background:var(--green-faint); color:var(--green);
+    font-size:10px; font-weight:700; letter-spacing:.16em;
+    padding:4px 10px; display:flex; justify-content:space-between;
+  }
+  .deck-in{padding:16px 14px; display:flex; align-items:center; gap:14px;}
+  .pbtn{
+    flex:none; width:62px; height:62px;
+    border:1px solid var(--green); background:transparent;
+    color:var(--green); cursor:pointer; font-size:20px;
+    display:flex; align-items:center; justify-content:center;
+    transition:background .12s, box-shadow .12s;
+  }
+  .pbtn:hover{background:rgba(61,240,122,.1);}
+  .pbtn:active{background:rgba(61,240,122,.2);}
+  .pbtn.playing{background:var(--green); color:var(--bg);
+    box-shadow:0 0 18px rgba(61,240,122,.55);}
+  .pbtn.live::after{content:"\25B6";}
+  .pbtn.playing::after{content:"\275A\275A"; font-size:15px; letter-spacing:-3px;}
+  .pbtn.loading::after{content:"..."; letter-spacing:1px;}
+  .pbtn.loading{animation:bl 1s steps(1) infinite;}
+  .deck-meta{flex:1; min-width:0;}
+  .deck-k{font-size:9px; color:var(--green-ghost); letter-spacing:.2em;}
+  .deck-name{
+    font-size:22px; font-weight:800; color:var(--green);
+    letter-spacing:.04em; line-height:1.15; margin:1px 0 2px;
+    text-shadow:0 0 10px rgba(61,240,122,.4);
+    word-break:break-word;
+  }
+  .deck-desc{font-size:11px; color:var(--green-dim); line-height:1.5;}
+  .deck-stat{
+    font-size:10px; color:var(--amber); margin-top:5px;
+    letter-spacing:.04em; min-height:13px;
+  }
+  .vu{display:flex; gap:2px; align-items:flex-end; height:13px; margin-top:6px;}
+  .vu i{width:3px; height:3px; background:var(--green-faint); display:block;}
+  .playing-vu i{background:var(--green); animation:vu .7s ease-in-out infinite;}
+  .playing-vu i:nth-child(2){animation-delay:.15s;}
+  .playing-vu i:nth-child(3){animation-delay:.3s;}
+  .playing-vu i:nth-child(4){animation-delay:.45s;}
+  .playing-vu i:nth-child(5){animation-delay:.6s;}
+  @keyframes vu{0%,100%{height:3px;}50%{height:12px;}}
+  /* ---- shuffle ---- */
+  .shuffle{
+    width:100%; margin-top:14px; cursor:pointer;
+    font-family:inherit; font-size:13px; font-weight:700;
+    letter-spacing:.12em; padding:13px;
+    background:transparent; color:var(--green);
+    border:1px solid var(--green);
+    transition:background .12s, box-shadow .12s;
+  }
+  .shuffle:hover{background:rgba(61,240,122,.1); box-shadow:0 0 16px rgba(61,240,122,.3);}
+  .shuffle:active{background:rgba(61,240,122,.22);}
+  /* ---- list ---- */
+  .sec{
+    font-size:10px; color:var(--green-ghost); letter-spacing:.18em;
+    margin:24px 0 8px; border-bottom:1px solid var(--green-faint);
+    padding-bottom:5px;
+  }
+  .stn{
+    display:flex; align-items:center; gap:10px;
+    padding:11px 8px; cursor:pointer;
+    border-bottom:1px solid #0e160e;
+    transition:background .1s, padding-left .1s;
+  }
+  .stn:hover{background:rgba(61,240,122,.06); padding-left:12px;}
+  .stn.on{background:rgba(61,240,122,.1);}
+  .stn-no{font-size:11px; color:var(--green-ghost); width:30px; flex:none;}
+  .stn.on .stn-no{color:var(--green);}
+  .stn-main{flex:1; min-width:0;}
+  .stn-name{
+    font-size:15px; font-weight:700; color:var(--green); letter-spacing:.03em;
+  }
+  .stn.on .stn-name{text-shadow:0 0 8px rgba(61,240,122,.5);}
+  .stn-desc{font-size:10px; color:var(--green-dim); margin-top:1px;}
+  .stn-tag{font-size:9px; color:var(--green-ghost); letter-spacing:.08em; flex:none;}
+  .stn.on .stn-tag{color:var(--green);}
+  .stn-x{
+    flex:none; border:none; background:none; cursor:pointer;
+    font-family:inherit; font-size:13px; color:var(--green-ghost); padding:3px 6px;
+  }
+  .stn-x:hover{color:var(--amber);}
+  /* ---- add ---- */
+  .add{margin-top:22px; border:1px solid var(--green-faint); padding:13px; background:var(--bg-2);}
+  .add-row{display:flex; gap:7px; margin-top:9px;}
+  input[type=text]{
+    flex:1; font-family:inherit; font-size:12px;
+    background:var(--bg); border:1px solid var(--green-faint);
+    padding:9px 10px; color:var(--green);
+  }
+  input[type=text]:focus{outline:none; border-color:var(--green);
+    box-shadow:0 0 10px rgba(61,240,122,.25);}
+  input[type=text]::placeholder{color:var(--green-ghost);}
+  .add button{
+    font-family:inherit; font-size:11px; font-weight:700; letter-spacing:.08em;
+    background:var(--green); color:var(--bg); border:none;
+    padding:9px 14px; cursor:pointer;
+  }
+  .add button:active{opacity:.7;}
+  .note{font-size:10px; color:var(--green-dim); margin-top:9px; line-height:1.7;}
+  .foot{
+    margin-top:22px; text-align:center; font-size:10px;
+    color:var(--green-ghost); letter-spacing:.1em;
+  }
+  .foot button{
+    background:none; border:none; color:var(--green-dim); cursor:pointer;
+    font-family:inherit; font-size:10px; text-decoration:underline;
+    text-underline-offset:3px; letter-spacing:.06em;
+  }
+  .foot button:hover{color:var(--green);}
 </style>
 </head>
 <body>
+<div class="scr">
 
-<div class="row between wrap">
-  <div>
-    <h1>[DIG] — sélecteur de pépites</h1>
-    <div class="sub">radios live + mixes · reprise auto · tirage pondéré</div>
+  <div class="prompt"><b>dig@radio</b>:~$ ./tune --boot</div>
+  <h1>[DIG]<span class="blink">_</span></h1>
+  <div class="boot">
+    <span class="ok">&gt;</span> init audio_engine ......... <span class="ok">OK</span><br>
+    <span class="ok">&gt;</span> load frequencies ......... <span class="ok" id="bootCount">OK</span><br>
+    <span class="ok">&gt;</span> random seed ............. <span class="ok" id="bootSeed">OK</span>
   </div>
-  <button class="primary" id="randomBtn">⇄ Au hasard</button>
-</div>
 
-<div class="card mt16">
-  <div class="now-title" id="nowTitle">Aucune sélection</div>
-  <div class="now-cur" id="nowCur">Tire au hasard ou choisis dans la liste</div>
-  <div id="playerSlot"><span class="empty">Le player apparaîtra ici</span></div>
-  <div class="resume" id="resumeNote" style="display:none"></div>
-</div>
+  <section class="deck">
+    <div class="deck-bar"><span>STREAM_MONITOR</span><span id="deckClock">--:--</span></div>
+    <div class="deck-in">
+      <button class="pbtn live" id="playBtn" aria-label="Lecture / pause"></button>
+      <div class="deck-meta">
+        <div class="deck-k">&gt;&gt; NOW_TRANSMITTING</div>
+        <div class="deck-name" id="nowName">—</div>
+        <div class="deck-desc" id="nowDesc">select a frequency</div>
+        <div class="deck-stat" id="nowStat"></div>
+        <div class="vu" id="vu"><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+    </div>
+  </section>
 
-<div class="row between mt24">
-  <span class="section-label">Ta liste</span>
-  <button class="ghost" id="resetBtn">↻ Réinitialiser l'historique</button>
-</div>
-<div class="stack mt12" id="list"></div>
+  <button class="shuffle" id="shuffleBtn">[ RANDOMIZE_FREQUENCY ]</button>
 
-<div class="card mt24">
-  <span class="section-label">Ajouter une émission</span>
-  <div class="add-form">
-    <input type="text" id="addUrl" placeholder="URL Mixcloud, lien de flux .mp3/.aac">
-    <button id="addBtn">Ajouter</button>
+  <div class="sec">// FREQUENCY_TABLE</div>
+  <div id="list"></div>
+
+  <section class="add">
+    <div class="sec" style="margin:0; border:none; padding:0;">// ADD_STREAM</div>
+    <div class="add-row">
+      <input type="text" id="addUrl" placeholder="stream URL (.mp3/.aac) or mixcloud.com/...">
+      <button id="addBtn">EXEC</button>
+    </div>
+    <p class="note">
+      &gt; flux radio direct = player natif &nbsp; // &nbsp; lien mixcloud = widget<br>
+      &gt; data persisted in localStorage // this browser only
+    </p>
+  </section>
+
+  <div class="foot">
+    <button id="resetBtn">$ reset --history</button>
   </div>
-  <div class="hint-line">
-    Mixcloud : colle l'adresse d'un mix précis (mixcloud.com/compte/nom-du-mix/).<br>
-    Radio / flux : colle une URL de stream direct (.mp3, .aac) — lue par le player natif.<br>
-    Tout est sauvegardé localement dans ce navigateur.
-  </div>
+
 </div>
 
+<audio id="audio" preload="none"></audio>
 <script src="https://widget.mixcloud.com/media/js/widgetApi.js"></script>
 <script>
 (function(){
   "use strict";
 
-  // type "live"     -> flux radio continu, player natif, PAS de reprise
-  // type "audio"    -> enregistrement MP3/AAC, player natif, reprise activee
-  // type "mixcloud" -> mix Mixcloud, widget, reprise activee
   var SEED = [
-    {id:"r1", type:"live", title:"NTS 1", curator:"NTS — Londres, live 24/7",
+    {id:"r1", type:"live", title:"NTS_1", tag:"LDN",
+     desc:"londres // la centrale du diggin', 24/7",
      ref:"https://stream-relay-geo.ntslive.net/stream?client=direct"},
-    {id:"r2", type:"live", title:"NTS 2", curator:"NTS — second flux, live 24/7",
+    {id:"r2", type:"live", title:"NTS_2", tag:"LDN",
+     desc:"second canal nts // plus ambient",
      ref:"https://stream-relay-geo.ntslive.net/stream2?client=direct"},
-    {id:"r3", type:"live", title:"FIP", curator:"Radio France — éclectique",
+    {id:"r3", type:"live", title:"FIP", tag:"FR",
+     desc:"radio france // eclectique, sans pub",
      ref:"https://icecast.radiofrance.fr/fip-hifi.aac?id=radiofrance"},
-    {id:"r4", type:"live", title:"FIP Électro", curator:"Radio France — webradio",
+    {id:"r4", type:"live", title:"FIP_ELECTRO", tag:"FR",
+     desc:"radio france // clubs & machines",
      ref:"https://icecast.radiofrance.fr/fipelectro-hifi.aac?id=radiofrance"},
-    {id:"r5", type:"live", title:"FIP Groove", curator:"Radio France — webradio",
+    {id:"r5", type:"live", title:"RADIO_NOVA", tag:"PAR",
+     desc:"underground parisien depuis 1981",
+     ref:"https://novazz.ice.infomaniak.ch/novazz-128.mp3"},
+    {id:"r6", type:"live", title:"RINSE_UK", tag:"LDN",
+     desc:"londres // garage, grime, house, jungle",
+     ref:"https://admin.stream.rinse.fm/proxy/rinse_uk/stream"},
+    {id:"r7", type:"live", title:"RINSE_FRANCE", tag:"PAR",
+     desc:"rinse france // electronique pointu",
+     ref:"https://radio10.pro-fhi.net/flux-trmqtiat/stream"},
+    {id:"r8", type:"live", title:"LE_MELLOTRON", tag:"PAR",
+     desc:"webradio curateurs // soul a beat music",
+     ref:"https://listen.radioking.com/radio/477719/stream/534044"},
+    {id:"r9", type:"live", title:"WORLDWIDE_FM", tag:"LDN",
+     desc:"gilles peterson // underground du monde entier",
+     ref:"https://worldwide-fm.radiocult.fm/stream"},
+    {id:"r10", type:"live", title:"FIP_GROOVE", tag:"FR",
+     desc:"sous-genre fip // funk, soul, groove",
      ref:"https://icecast.radiofrance.fr/fipgroove-hifi.aac?id=radiofrance"},
-    {id:"r6", type:"live", title:"FIP Jazz", curator:"Radio France — webradio",
+    {id:"r11", type:"live", title:"FIP_JAZZ", tag:"FR",
+     desc:"sous-genre fip // jazz",
      ref:"https://icecast.radiofrance.fr/fipjazz-hifi.aac?id=radiofrance"},
-    {id:"r7", type:"live", title:"FIP Rock", curator:"Radio France — webradio",
-     ref:"https://icecast.radiofrance.fr/fiprock-hifi.aac?id=radiofrance"},
-    {id:"r8", type:"live", title:"FIP Reggae", curator:"Radio France — webradio",
-     ref:"https://icecast.radiofrance.fr/fipreggae-hifi.aac?id=radiofrance"},
-    {id:"r9", type:"live", title:"FIP Monde", curator:"Radio France — webradio",
-     ref:"https://icecast.radiofrance.fr/fipworld-hifi.aac?id=radiofrance"},
-    {id:"r10", type:"live", title:"FIP Nouveautés", curator:"Radio France — webradio",
+    {id:"r12", type:"live", title:"FIP_NOUVEAUTES", tag:"FR",
+     desc:"sous-genre fip // sorties recentes",
      ref:"https://icecast.radiofrance.fr/fipnouveautes-hifi.aac?id=radiofrance"},
-    {id:"r11", type:"live", title:"FIP Hip-Hop", curator:"Radio France — webradio",
-     ref:"https://icecast.radiofrance.fr/fiphiphop-hifi.aac?id=radiofrance"},
-    {id:"r12", type:"live", title:"FIP Metal", curator:"Radio France — webradio",
-     ref:"https://icecast.radiofrance.fr/fipmetal-hifi.aac?id=radiofrance"},
-    {id:"r13", type:"live", title:"Radio Nova", curator:"Nova — underground, Paris",
-     ref:"https://novazz.ice.infomaniak.ch/novazz-128.mp3"}
+    {id:"r13", type:"live", title:"FIP_REGGAE", tag:"FR",
+     desc:"sous-genre fip // reggae, dub",
+     ref:"https://icecast.radiofrance.fr/fipreggae-hifi.aac?id=radiofrance"}
   ];
 
   var DB = load();
-
   function load(){
-    try{
-      var raw = localStorage.getItem("dig_db_v3");
-      if(raw) return JSON.parse(raw);
-    }catch(e){}
-    return { mixes: SEED.slice(), prog: {} };
+    try{ var r=localStorage.getItem("dig_db_v6"); if(r) return JSON.parse(r); }catch(e){}
+    return {mixes:SEED.slice(), prog:{}};
   }
-  function save(){
-    try{ localStorage.setItem("dig_db_v3", JSON.stringify(DB)); }catch(e){}
-  }
-  function prog(id){
-    if(!DB.prog[id]) DB.prog[id] = {seconds:0, last:0, plays:0};
-    return DB.prog[id];
-  }
-  function fmt(s){
-    s = Math.round(s||0);
-    var m = Math.floor(s/60), x = s%60;
-    return m + ":" + (x<10?"0":"") + x;
-  }
-  function resumable(mix){ return mix.type === "audio" || mix.type === "mixcloud"; }
+  function save(){ try{ localStorage.setItem("dig_db_v6", JSON.stringify(DB)); }catch(e){} }
+  function prog(id){ if(!DB.prog[id]) DB.prog[id]={last:0,plays:0}; return DB.prog[id]; }
 
-  var slot   = document.getElementById("playerSlot");
-  var nowT   = document.getElementById("nowTitle");
-  var nowC   = document.getElementById("nowCur");
-  var resume = document.getElementById("resumeNote");
+  var audio   = document.getElementById("audio");
+  var playBtn = document.getElementById("playBtn");
+  var nowName = document.getElementById("nowName");
+  var nowDesc = document.getElementById("nowDesc");
+  var nowStat = document.getElementById("nowStat");
+  var vu      = document.getElementById("vu");
 
-  var current = null;
-  var mcWidget = null;
-  var audioEl = null;
-  var saveTimer = null;
+  var current=null, mcWidget=null, mcPlaying=false;
 
-  function teardown(){
-    if(saveTimer){ clearInterval(saveTimer); saveTimer=null; }
-    mcWidget = null; audioEl = null;
-    slot.innerHTML = "";
+  function clearMix(){
+    var o=document.getElementById("mcFrame"); if(o) o.remove();
+    mcWidget=null; mcPlaying=false;
+  }
+  function setBtn(m){
+    playBtn.classList.remove("live","playing","loading");
+    playBtn.classList.add(m);
+    vu.classList.toggle("playing-vu", m==="playing");
   }
 
-  function play(mix){
-    teardown();
-    current = mix;
-    var p = prog(mix.id);
-    nowT.textContent = mix.title;
-    nowC.textContent = mix.curator || "";
+  function select(mix, autoplay){
+    current=mix;
+    nowName.textContent=mix.title;
+    nowDesc.textContent=mix.desc||"";
+    audio.pause(); clearMix();
 
-    if(resumable(mix) && p.seconds > 15){
-      resume.style.display = "block";
-      resume.textContent = "Reprise à " + fmt(p.seconds) + " — redémarre où tu t'étais arrêté.";
-    } else if(mix.type === "live"){
-      resume.style.display = "block";
-      resume.textContent = "● Direct — ce qui passe maintenant.";
-    } else {
-      resume.style.display = "none";
-    }
-
-    if(mix.type === "mixcloud"){
-      var src = "https://www.mixcloud.com/widget/iframe/?hide_cover=1&light=0&feed="
-                + encodeURIComponent(mix.ref);
-      var f = document.createElement("iframe");
-      f.width="100%"; f.height="120"; f.frameBorder="0"; f.src=src;
-      f.allow="autoplay";
-      slot.appendChild(f);
+    if(mix.type==="mixcloud"){
+      nowStat.textContent="// recorded mix";
+      var f=document.createElement("iframe");
+      f.id="mcFrame"; f.width="100%"; f.height="120"; f.frameBorder="0"; f.allow="autoplay";
+      f.src="https://www.mixcloud.com/widget/iframe/?hide_cover=1&feed="+encodeURIComponent(mix.ref);
+      f.style.cssText="border:1px solid var(--green-faint);margin:0 14px 14px;width:calc(100% - 28px);";
+      document.querySelector(".deck").appendChild(f);
+      setBtn("live");
       setTimeout(function(){
         try{
-          mcWidget = Mixcloud.PlayerWidget(f);
+          mcWidget=Mixcloud.PlayerWidget(f);
           mcWidget.ready.then(function(){
-            if(p.seconds>15){ try{ mcWidget.seek(p.seconds); }catch(e){} }
-            mcWidget.events.progress.on(function(pos){ p.seconds=pos; });
-            mcWidget.events.play.on(function(){
-              p.last=Date.now(); p.plays=(p.plays||0)+1; save(); render();
-            });
-            mcWidget.events.pause.on(save);
-            mcWidget.events.ended.on(function(){ p.seconds=0; save(); });
-            saveTimer = setInterval(save, 8000);
+            mcWidget.events.play.on(function(){mcPlaying=true;setBtn("playing");});
+            mcWidget.events.pause.on(function(){mcPlaying=false;setBtn("live");});
+            if(autoplay){ try{mcWidget.play();}catch(e){} }
           });
         }catch(e){}
-      }, 700);
+      },700);
     } else {
-      audioEl = document.createElement("audio");
-      audioEl.controls = true;
-      audioEl.preload = "metadata";
-      audioEl.src = mix.ref;
-      slot.appendChild(audioEl);
-      if(mix.type === "audio"){
-        audioEl.addEventListener("loadedmetadata", function(){
-          if(p.seconds>15 && p.seconds < (audioEl.duration||1e9)){
-            try{ audioEl.currentTime = p.seconds; }catch(e){}
-          }
-        });
-        audioEl.addEventListener("timeupdate", function(){ p.seconds = audioEl.currentTime; });
-        audioEl.addEventListener("ended", function(){ p.seconds=0; save(); });
-      }
-      audioEl.addEventListener("play", function(){
-        p.last=Date.now(); p.plays=(p.plays||0)+1; save(); render();
-      });
-      audioEl.addEventListener("pause", save);
-      audioEl.addEventListener("error", function(){
-        resume.style.display="block";
-        resume.textContent="⚠ Flux injoignable — l'URL a peut-être changé.";
-      });
-      saveTimer = setInterval(save, 8000);
+      nowStat.textContent="● LIVE_STREAM";
+      audio.src=mix.ref;
+      setBtn("live");
+      if(autoplay) startAudio();
     }
-    save(); render();
+    var pr=prog(mix.id); pr.last=Date.now(); pr.plays=(pr.plays||0)+1; save();
+    render();
   }
 
-  function pickRandom(){
-    var now = Date.now(), list = DB.mixes;
-    if(!list.length) return null;
-    var weighted = list.map(function(m){
-      var p = prog(m.id);
-      var hrs = p.last ? (now - p.last)/3600000 : 9999;
-      var w = Math.min(hrs, 720) + 1;
-      if(current && m.id === current.id) w = 0.01;
-      return {m:m, w:w};
-    });
-    var total = weighted.reduce(function(a,b){return a+b.w;},0);
-    var r = Math.random()*total;
-    for(var i=0;i<weighted.length;i++){
-      r -= weighted[i].w;
-      if(r<=0) return weighted[i].m;
+  function startAudio(){
+    setBtn("loading");
+    nowStat.textContent="connecting...";
+    var p=audio.play();
+    if(p&&p.catch){
+      p.then(function(){
+        setBtn("playing");
+        nowStat.textContent= current.type==="live" ? "● LIVE_STREAM" : "";
+      }).catch(function(){
+        setBtn("live");
+        nowStat.textContent="press [\u25B6] to start audio";
+      });
     }
-    return list[0];
+  }
+
+  audio.addEventListener("playing",function(){
+    setBtn("playing");
+    nowStat.textContent= current&&current.type==="live" ? "● LIVE_STREAM" : "";
+    if("mediaSession" in navigator && current){
+      navigator.mediaSession.metadata=new MediaMetadata({
+        title:current.title, artist:current.desc||"[DIG]", album:"[DIG] radio"
+      });
+    }
+  });
+  audio.addEventListener("pause",function(){ if(!audio.ended) setBtn("live"); });
+  audio.addEventListener("waiting",function(){ setBtn("loading"); });
+  audio.addEventListener("error",function(){
+    setBtn("live");
+    nowStat.textContent="⚠ ERR // stream unreachable";
+  });
+
+  playBtn.addEventListener("click",function(){
+    if(!current) return;
+    if(current.type==="mixcloud"){
+      if(mcWidget){ mcPlaying?mcWidget.pause():mcWidget.play(); }
+      return;
+    }
+    if(audio.paused) startAudio(); else audio.pause();
+  });
+
+  function pickRandom(){
+    var now=Date.now(), L=DB.mixes;
+    if(!L.length) return null;
+    var w=L.map(function(m){
+      var pr=prog(m.id);
+      var h=pr.last?(now-pr.last)/3600000:9999;
+      var x=Math.min(h,720)+1;
+      if(current&&m.id===current.id) x=0.01;
+      return {m:m,x:x};
+    });
+    var t=w.reduce(function(a,b){return a+b.x;},0), r=Math.random()*t;
+    for(var i=0;i<w.length;i++){ r-=w[i].x; if(r<=0) return w[i].m; }
+    return L[0];
   }
 
   function render(){
-    var el = document.getElementById("list");
-    el.innerHTML = "";
+    var el=document.getElementById("list");
+    el.innerHTML="";
     if(!DB.mixes.length){
-      el.innerHTML = '<div class="hint-line">Liste vide — ajoute une émission ci-dessous.</div>';
+      el.innerHTML='<p class="note">&gt; table empty // add a stream below</p>';
       return;
     }
-    DB.mixes.forEach(function(m){
-      var p = prog(m.id);
-      var active = current && m.id===current.id;
-      var row = document.createElement("div");
-      row.className = "mix" + (active?" active":"");
-
-      var stat;
-      if(m.type === "live"){
-        stat = '<span class="stat">'+(p.plays?('lancé '+p.plays+'×'):'—')+'</span>';
-      } else if(p.seconds>15){
-        stat = '<span class="stat has">▸ '+fmt(p.seconds)+'</span>';
-      } else {
-        stat = '<span class="stat">'+(p.plays?('lancé '+p.plays+'×'):'jamais lancé')+'</span>';
-      }
-
-      var badge = m.type==="live"
-        ? '<span class="badge live">● live</span>'
-        : '<span class="badge">'+(m.type==="mixcloud"?"mixcloud":"audio")+'</span>';
-
-      row.innerHTML =
-        '<span class="ic">'+(active?'▶':(m.type==="live"?'◉':'◎'))+'</span>'+
-        '<div class="meta">'+
-          '<div class="mt">'+esc(m.title)+'</div>'+
-          '<div class="mc">'+esc(m.curator||"")+' '+badge+'</div>'+
-        '</div>'+stat+
-        '<button class="del" data-id="'+m.id+'" title="Retirer">✕</button>';
-
-      row.addEventListener("click", function(ev){
-        if(ev.target.classList.contains("del")) return;
-        play(m);
+    DB.mixes.forEach(function(m,i){
+      var on=current&&m.id===current.id;
+      var row=document.createElement("div");
+      row.className="stn"+(on?" on":"");
+      var n="0x"+(i+1<16?"0":"")+(i+1).toString(16).toUpperCase();
+      row.innerHTML=
+        '<span class="stn-no">'+n+'</span>'+
+        '<div class="stn-main">'+
+          '<div class="stn-name">'+(on?'&gt; ':'')+esc(m.title)+'</div>'+
+          '<div class="stn-desc">'+esc(m.desc||"")+'</div>'+
+        '</div>'+
+        '<span class="stn-tag">'+(on?'[ON AIR]':esc(m.tag||(m.type==="mixcloud"?"MIX":"··")))+'</span>'+
+        '<button class="stn-x" data-id="'+m.id+'" title="remove">[x]</button>';
+      row.addEventListener("click",function(ev){
+        if(ev.target.classList.contains("stn-x")) return;
+        select(m,true);
       });
       el.appendChild(row);
     });
-    el.querySelectorAll(".del").forEach(function(b){
-      b.addEventListener("click", function(){
-        var id = b.getAttribute("data-id");
-        DB.mixes = DB.mixes.filter(function(x){return x.id!==id;});
+    el.querySelectorAll(".stn-x").forEach(function(b){
+      b.addEventListener("click",function(){
+        var id=b.getAttribute("data-id");
+        DB.mixes=DB.mixes.filter(function(x){return x.id!==id;});
         delete DB.prog[id];
-        if(current && current.id===id){ current=null; teardown();
-          slot.innerHTML='<span class="empty">Le player apparaîtra ici</span>';
-          nowT.textContent="Aucune sélection";
-          nowC.textContent="Tire au hasard ou choisis dans la liste";
-          resume.style.display="none";
+        if(current&&current.id===id){
+          current=null; audio.pause(); clearMix();
+          nowName.textContent="—"; nowDesc.textContent="select a frequency";
+          nowStat.textContent=""; setBtn("live");
         }
         save(); render();
       });
@@ -340,58 +437,63 @@
   }
 
   function addMix(url){
-    url = (url||"").trim();
-    if(!url) return;
-    var id = "u" + Date.now();
-    var mix;
+    url=(url||"").trim(); if(!url) return;
+    var id="u"+Date.now(), mix;
     if(/mixcloud\.com/i.test(url)){
-      var path = url.replace(/^https?:\/\/(www\.)?mixcloud\.com/i,"").split("?")[0];
-      if(path.charAt(0)!=="/") path = "/"+path;
-      if(path.charAt(path.length-1)!=="/") path += "/";
-      var seg = path.split("/").filter(Boolean);
-      if(seg.length < 2){
-        alert("Colle l'URL d'un MIX précis, pas seulement d'un compte.\nEx : mixcloud.com/compte/nom-du-mix/");
-        return;
-      }
-      var nameGuess = seg[seg.length-1];
-      mix = {id:id, type:"mixcloud",
-             title:decodeURIComponent(nameGuess).replace(/-/g," "),
-             curator:"Mixcloud", ref:path};
+      var path=url.replace(/^https?:\/\/(www\.)?mixcloud\.com/i,"").split("?")[0];
+      if(path.charAt(0)!=="/") path="/"+path;
+      if(path.charAt(path.length-1)!=="/") path+="/";
+      var seg=path.split("/").filter(Boolean);
+      if(seg.length<2){ alert("ERR: colle l'URL d'un MIX precis (mixcloud.com/compte/nom-du-mix/), pas un compte."); return; }
+      mix={id:id,type:"mixcloud",
+           title:decodeURIComponent(seg[seg.length-1]).replace(/-/g,"_").toUpperCase(),
+           tag:"MIX",desc:"mix mixcloud",ref:path};
     } else if(/^https?:\/\//i.test(url)){
-      var isLive = !/\.mp3(\?|$)/i.test(url) || /icecast|stream-relay|radiofrance/i.test(url);
-      var fn = url.split("/").pop().split("?")[0] || "flux";
-      mix = {id:id, type: isLive ? "live" : "audio",
-             title:decodeURIComponent(fn).replace(/\.(mp3|aac)$/i,""),
-             curator: isLive ? "flux live" : "enregistrement", ref:url};
-    } else {
-      alert("URL non reconnue. Colle un lien Mixcloud ou une URL de flux (http…).");
-      return;
-    }
-    DB.mixes.push(mix);
-    save(); render();
+      var fn=url.split("/").pop().split("?")[0]||"stream";
+      mix={id:id,type:"live",
+           title:decodeURIComponent(fn).replace(/\.(mp3|aac)$/i,"").toUpperCase(),
+           tag:"NEW",desc:"flux ajoute",ref:url};
+    } else { alert("ERR: URL non reconnue. http(s) flux, ou lien mixcloud."); return; }
+    DB.mixes.push(mix); save(); render();
   }
 
-  document.getElementById("randomBtn").addEventListener("click", function(){
-    var m = pickRandom();
-    if(m) play(m);
+  document.getElementById("shuffleBtn").addEventListener("click",function(){
+    var m=pickRandom(); if(m) select(m,true);
   });
-  document.getElementById("resetBtn").addEventListener("click", function(){
-    DB.prog = {}; current=null; teardown();
-    slot.innerHTML='<span class="empty">Le player apparaîtra ici</span>';
-    nowT.textContent="Aucune sélection";
-    nowC.textContent="Tire au hasard ou choisis dans la liste";
-    resume.style.display="none";
-    save(); render();
+  document.getElementById("addBtn").addEventListener("click",function(){
+    var i=document.getElementById("addUrl"); addMix(i.value); i.value="";
   });
-  document.getElementById("addBtn").addEventListener("click", function(){
-    var inp = document.getElementById("addUrl");
-    addMix(inp.value); inp.value="";
-  });
-  document.getElementById("addUrl").addEventListener("keydown", function(e){
+  document.getElementById("addUrl").addEventListener("keydown",function(e){
     if(e.key==="Enter"){ addMix(this.value); this.value=""; }
   });
+  document.getElementById("resetBtn").addEventListener("click",function(){
+    DB.prog={}; save(); render();
+    nowStat.textContent="// history wiped";
+  });
+
+  if("mediaSession" in navigator){
+    navigator.mediaSession.setActionHandler("play",function(){
+      if(current&&current.type==="live") startAudio();
+    });
+    navigator.mediaSession.setActionHandler("pause",function(){ audio.pause(); });
+  }
+
+  function tick(){
+    var d=new Date();
+    var hh=("0"+d.getHours()).slice(-2), mm=("0"+d.getMinutes()).slice(-2);
+    document.getElementById("deckClock").textContent=hh+":"+mm;
+  }
+  tick(); setInterval(tick,30000);
+
+  document.getElementById("bootCount").textContent=DB.mixes.length+" FREQ";
 
   render();
+  var first=pickRandom();
+  if(first){
+    document.getElementById("bootSeed").textContent="0x"+Math.floor(Math.random()*65536).toString(16).toUpperCase();
+    select(first,false);
+    nowStat.textContent="▶ ready // press play";
+  }
 })();
 </script>
 </body>
