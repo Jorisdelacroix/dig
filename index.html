@@ -226,6 +226,7 @@
 </div>
 
 <audio id="audio" preload="none"></audio>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
 <script src="https://widget.mixcloud.com/media/js/widgetApi.js"></script>
 <script>
 (function(){
@@ -270,15 +271,21 @@
      ref:"https://icecast.radiofrance.fr/fipnouveautes-hifi.aac?id=radiofrance"},
     {id:"r13", type:"live", title:"FIP_REGGAE", tag:"FR",
      desc:"sous-genre fip // reggae, dub",
-     ref:"https://icecast.radiofrance.fr/fipreggae-hifi.aac?id=radiofrance"}
+     ref:"https://icecast.radiofrance.fr/fipreggae-hifi.aac?id=radiofrance"},
+    {id:"r14", type:"live", title:"FIP_METAL", tag:"FR",
+     desc:"sous-genre fip // metal",
+     ref:"https://icecast.radiofrance.fr/fipmetal-hifi.aac?id=radiofrance"},
+    {id:"r15", type:"live", title:"TRIPLE_J", tag:"AUS",
+     desc:"abc australie // decouvertes, indie, hls",
+     ref:"https://streaming.abc-cdn.net.au/audio/hls/triplejnsw.m3u8?source=web"}
   ];
 
   var DB = load();
   function load(){
-    try{ var r=localStorage.getItem("dig_db_v6"); if(r) return JSON.parse(r); }catch(e){}
+    try{ var r=localStorage.getItem("dig_db_v7"); if(r) return JSON.parse(r); }catch(e){}
     return {mixes:SEED.slice(), prog:{}};
   }
-  function save(){ try{ localStorage.setItem("dig_db_v6", JSON.stringify(DB)); }catch(e){} }
+  function save(){ try{ localStorage.setItem("dig_db_v7", JSON.stringify(DB)); }catch(e){} }
   function prog(id){ if(!DB.prog[id]) DB.prog[id]={last:0,plays:0}; return DB.prog[id]; }
 
   var audio   = document.getElementById("audio");
@@ -288,11 +295,12 @@
   var nowStat = document.getElementById("nowStat");
   var vu      = document.getElementById("vu");
 
-  var current=null, mcWidget=null, mcPlaying=false;
+  var current=null, mcWidget=null, mcPlaying=false, hls=null;
 
   function clearMix(){
     var o=document.getElementById("mcFrame"); if(o) o.remove();
     mcWidget=null; mcPlaying=false;
+    if(hls){ try{ hls.destroy(); }catch(e){} hls=null; }
   }
   function setBtn(m){
     playBtn.classList.remove("live","playing","loading");
@@ -300,11 +308,36 @@
     vu.classList.toggle("playing-vu", m==="playing");
   }
 
+  function loadStream(mix){
+    var isHls = /\.m3u8(\?|$)/i.test(mix.ref);
+    if(isHls){
+      // Safari plays HLS natively; elsewhere we need hls.js
+      if(audio.canPlayType("application/vnd.apple.mpegurl")){
+        audio.src=mix.ref;
+      } else if(window.Hls && window.Hls.isSupported()){
+        hls=new Hls();
+        hls.loadSource(mix.ref);
+        hls.attachMedia(audio);
+        hls.on(Hls.Events.ERROR,function(e,data){
+          if(data && data.fatal){
+            setBtn("live");
+            nowStat.textContent="⚠ ERR // HLS stream unreachable";
+          }
+        });
+      } else {
+        nowStat.textContent="⚠ ERR // HLS non supporté ici";
+        return;
+      }
+    } else {
+      audio.src=mix.ref;
+    }
+  }
+
   function select(mix, autoplay){
     current=mix;
     nowName.textContent=mix.title;
     nowDesc.textContent=mix.desc||"";
-    audio.pause(); clearMix();
+    audio.pause(); audio.removeAttribute("src"); clearMix();
 
     if(mix.type==="mixcloud"){
       nowStat.textContent="// recorded mix";
@@ -326,7 +359,7 @@
       },700);
     } else {
       nowStat.textContent="● LIVE_STREAM";
-      audio.src=mix.ref;
+      loadStream(mix);
       setBtn("live");
       if(autoplay) startAudio();
     }
